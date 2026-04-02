@@ -721,6 +721,14 @@ async function process(text) {
       smartSaveToCalendar(text);
     }
     if(/(?:note|idea|remember|save that|jot)/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
+    if(/note|idea|remember|save|jot/.test(tl2)){
+      const noteText = text.replace(/^(hey\s+)?(zbot\s+)?(note|remember|save|jot|idea)[:\s]*/i,'').trim();
+      if(noteText.length > 2){
+        notes.unshift({id:Date.now(),text:'✦ '+noteText,time:now.toLocaleString()});
+        saveNotes();
+        renderNotes();
+      }
+    }
     if(/stress|anxious|overwhelm|panic|freak/.test(tl2)) stressMode();
   } catch(e) {
     ty.innerHTML=`<div class="nm">ZBOT ✦</div>Hmm, I had a hiccup 🌸 Check your worker URL in Settings. (${e.message})`;
