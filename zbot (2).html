@@ -160,6 +160,10 @@ body{display:flex;flex-direction:column;height:100dvh}
 #gcal-banner{display:none;background:var(--pdark);border:0.5px solid var(--p);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--p);text-align:center;line-height:1.5;margin-bottom:4px}
 #gcal-banner.show{display:block}
 #gcal-banner a{color:#fff;font-weight:500;text-decoration:none}
+.gif-tag{background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;padding:6px 12px;font-size:11px;color:var(--txt2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.gif-tag.on{background:linear-gradient(135deg,var(--p3),var(--p));border-color:transparent;color:#fff}
+.gif-card{border-radius:12px;overflow:hidden;background:var(--bg2);aspect-ratio:1;cursor:pointer;border:0.5px solid var(--border)}
+.gif-card img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 </head>
 <body>
@@ -202,6 +206,7 @@ body{display:flex;flex-direction:column;height:100dvh}
   <button class="tab" onclick="showTab('today')">Today</button>
   <button class="tab" onclick="showTab('tasks')">Tasks</button>
   <button class="tab" onclick="showTab('notes')">Notes</button>
+  <button class="tab" onclick="showTab('gifs')">Vibes 💃</button>
 </div>
 
 <div id="panels">
@@ -222,7 +227,10 @@ body{display:flex;flex-direction:column;height:100dvh}
   <!-- TODAY -->
   <div class="panel" id="panel-today">
     <div class="scrl">
-      <div id="gcal-banner"><a href="#" onclick="signInGoogle();return false;">Connect Google Calendar to see real events →</a></div>
+      <div id="gcal-banner" class="show">
+        <div style="margin-bottom:8px;font-size:12px;color:var(--p)">Connect Google Calendar to see your real events 🌸</div>
+        <div onclick="signInGoogle()" style="background:linear-gradient(135deg,var(--p3),var(--p));color:#fff;border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif">📅 Sign in with Google</div>
+      </div>
       <div>
         <div class="slabel">Daily Spark ✦</div>
         <div class="quote-card"><div class="quote-txt" id="quote-txt">Loading your daily quote...</div><div class="quote-author" id="quote-author"></div></div>
@@ -244,7 +252,7 @@ body{display:flex;flex-direction:column;height:100dvh}
       </div>
       <div>
         <div class="slabel">Today's Events 📅</div>
-        <div id="evlist"><div class="empty">Loading your calendar...</div></div>
+        <div id="evlist"><div class="empty">Tap the banner above to connect Google Calendar 🌸</div></div>
       </div>
       <div>
         <div class="slabel">Quick Actions</div>
@@ -275,10 +283,36 @@ body{display:flex;flex-direction:column;height:100dvh}
     </div>
   </div>
 
+
+  <!-- GIFS -->
+  <div class="panel" id="panel-gifs">
+    <div style="padding:14px 16px;border-bottom:0.5px solid var(--border);background:var(--bg1);flex-shrink:0;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="gif-tag on" onclick="searchGifs('bollywood',this)">🎬 Bollywood</button>
+      <button class="gif-tag" onclick="searchGifs('south asian',this)">🌸 Desi</button>
+      <button class="gif-tag" onclick="searchGifs('bharatanatyam dance',this)">💃 Dance</button>
+      <button class="gif-tag" onclick="searchGifs('shah rukh khan',this)">⭐ SRK</button>
+      <button class="gif-tag" onclick="searchGifs('deepika padukone',this)">✨ Deepika</button>
+      <button class="gif-tag" onclick="searchGifs('bollywood drama',this)">😭 Drama</button>
+      <button class="gif-tag" onclick="searchGifs('indian wedding',this)">💍 Wedding</button>
+      <button class="gif-tag" onclick="searchGifs('rani mukerji',this)">👑 Rani</button>
+      <button class="gif-tag" onclick="searchGifs('desi aunty funny',this)">😂 Aunty</button>
+      <button class="gif-tag" onclick="searchGifs('indian mom funny',this)">👩 Desi Mom</button>
+      <button class="gif-tag" onclick="searchGifs('bollywood funny',this)">🤣 Funny</button>
+      <button class="gif-tag" onclick="searchGifs('south asian meme',this)">💀 Memes</button>
+      <button class="gif-tag" onclick="searchGifs('priyanka chopra',this)">🌟 Priyanka</button>
+      <button class="gif-tag" onclick="searchGifs('kuch kuch hota hai',this)">🎭 KKHH</button>
+      <button class="gif-tag" onclick="searchGifs('indian food',this)">🍛 Food</button>
+    </div>
+    <div id="gif-grid" style="flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;-webkit-overflow-scrolling:touch;align-content:start">
+      <div class="empty" style="grid-column:span 2">Loading Bollywood vibes... 💃</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 const GCLIENT_ID = '186421994945-tkqcg90g8budulhqbdc5c09rp2fe65m3.apps.googleusercontent.com';
+const GIPHY_KEY = 'OAiOc9bSLPweNDVKhhRVHsmPyCZdFb4j';
 const BRIEFING_HOUR = 10;
 const BRIEFING_MIN = 0;
 
@@ -351,10 +385,11 @@ function boot() {
   synth.getVoices(); synth.onvoiceschanged = () => synth.getVoices();
   initGoogle();
   startAlarmChecker();
+  searchGifs('bollywood', null);
 }
 
 function showTab(n) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('on', ['chat','today','tasks','notes'][i] === n));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('on', ['chat','today','tasks','notes','gifs'][i] === n));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
   document.getElementById('panel-'+n).classList.add('on');
 }
@@ -364,7 +399,61 @@ function goApple(url) { window.location.href = url; }
 // ── ALARM ──
 function startAlarmChecker() {
   checkAlarm();
+  checkTaskReminders();
   setInterval(checkAlarm, 30000);
+  setInterval(checkTaskReminders, 60000);
+}
+
+function checkTaskReminders() {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  
+  evs.forEach(ev => {
+    if (!ev.time || ev.time === 'All day') return;
+    
+    // Parse event time
+    const [time, period] = ev.time.split(' ');
+    if (!time || !period) return;
+    let [h, m] = time.split(':').map(Number);
+    if (period === 'PM' && h !== 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    const evMins = h * 60 + m;
+    const diff = evMins - nowMins;
+    
+    // Remind 2 hours before
+    const remKey = 'zbot_reminded_' + now.toDateString() + '_' + ev.name;
+    if (diff >= 118 && diff <= 122 && !localStorage.getItem(remKey)) {
+      localStorage.setItem(remKey, '1');
+      const msg = `Hey! Just a heads up — ${ev.name} is in 2 hours at ${ev.time}. Get ready! 🌸`;
+      addBot(msg);
+      speak(msg);
+      document.getElementById('alarm-banner').classList.add('show');
+      document.getElementById('alarm-txt').textContent = msg;
+      showTab('chat');
+    }
+  });
+
+  // Check tasks with due times
+  tasks.forEach(t => {
+    if (t.done || !t.dueTime) return;
+    const [time, period] = t.dueTime.split(' ');
+    if (!time || !period) return;
+    let [h, m] = time.split(':').map(Number);
+    if (period === 'PM' && h !== 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    const taskMins = h * 60 + m;
+    const diff = taskMins - nowMins;
+    const remKey = 'zbot_task_reminded_' + now.toDateString() + '_' + t.id;
+    if (diff >= 118 && diff <= 122 && !localStorage.getItem(remKey)) {
+      localStorage.setItem(remKey, '1');
+      const msg = `Reminder! "${t.text}" is due in 2 hours. You got this! 💪🌸`;
+      addBot(msg);
+      speak(msg);
+      document.getElementById('alarm-banner').classList.add('show');
+      document.getElementById('alarm-txt').textContent = msg;
+      showTab('chat');
+    }
+  });
 }
 
 function checkAlarm() {
@@ -485,24 +574,8 @@ function initGoogle() {
   const script = document.createElement('script');
   script.src = 'https://accounts.google.com/gsi/client';
   script.onload = () => {
-    try {
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: GCLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
-        callback: (resp) => {
-          if (resp.access_token) {
-            gToken = resp.access_token;
-            document.getElementById('gcal-banner').classList.remove('show');
-            loadGoogleCalendar();
-            loadGoogleTasks();
-          }
-        }
-      });
-      tokenClient.requestAccessToken({prompt:''});
-    } catch(e) {
-      document.getElementById('gcal-banner').classList.add('show');
-      loadFallbackBriefing();
-    }
+    document.getElementById('gcal-banner').classList.add('show');
+    loadFallbackBriefing();
   };
   script.onerror = () => {
     document.getElementById('gcal-banner').classList.add('show');
@@ -520,13 +593,19 @@ function signInGoogle() {
         if (resp.access_token) {
           gToken = resp.access_token;
           document.getElementById('gcal-banner').classList.remove('show');
+          document.getElementById('evlist').innerHTML = '<div class="empty">Loading your events...</div>';
+          document.getElementById('tasklist').innerHTML = '<div class="empty">Loading your tasks...</div>';
           loadGoogleCalendar();
           loadGoogleTasks();
+        } else {
+          alert('Google sign in failed — please try again');
         }
       }
     });
-    tokenClient.requestAccessToken();
-  } catch(e) { alert('Google sign in failed — try again'); }
+    tokenClient.requestAccessToken({prompt: 'select_account'});
+  } catch(e) { 
+    alert('Google sign in error: ' + e.message);
+  }
 }
 
 async function loadGoogleCalendar() {
@@ -701,6 +780,32 @@ function renderTasks(){
 function saveNotes(){localStorage.setItem('zbot_notes',JSON.stringify(notes));}
 function addNote(){const i=document.getElementById('noteinp'),t=i.value.trim();if(!t)return;i.value='';notes.unshift({id:Date.now(),text:'✦ '+t,time:new Date().toLocaleString()});saveNotes();renderNotes();}
 function delNote(id){notes=notes.filter(n=>n.id!=id);saveNotes();renderNotes();}
+async function searchGifs(query, btn) {
+  document.querySelectorAll('.gif-tag').forEach(t => t.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  const grid = document.getElementById('gif-grid');
+  grid.innerHTML = '<div class="empty" style="grid-column:span 2">Loading... 💃</div>';
+  try {
+    const resp = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=g`);
+    const data = await resp.json();
+    if(!data.data.length){ grid.innerHTML='<div class="empty" style="grid-column:span 2">No GIFs found 😔</div>'; return; }
+    grid.innerHTML = data.data.map(g => `
+      <div class="gif-card" onclick="fullscreenGif('${g.images.original.url}')">
+        <img src="${g.images.fixed_height_small.url}" loading="lazy" alt="${g.title}">
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="empty" style="grid-column:span 2">Could not load GIFs 😔</div>';
+  }
+}
+
+function fullscreenGif(url) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<img src="${url}" style="max-width:100%;max-height:90vh;border-radius:16px;object-fit:contain"><div style="position:absolute;top:20px;right:20px;font-size:28px;cursor:pointer;color:#fff" onclick="this.parentElement.remove()">×</div>`;
+  overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
 function renderNotes(){
   const el=document.getElementById('notelist');
   if(!notes.length){el.innerHTML='<div class="empty">No ideas yet — say "note that..." or type below ✨</div>';return;}
