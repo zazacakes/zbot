@@ -717,9 +717,8 @@ async function process(text) {
     if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){const rt=m[1].trim();tasks.unshift({id:Date.now(),text:rt,done:false,time:now.toLocaleString()});saveTasks();renderTasks();saveToGoogleTasks(rt);}}
     
     if(/navigate|direction|take me to|open maps|get me to/.test(tl2)){const m=text.match(/(?:navigate|directions?|take me to|open maps|get me to)\s+(?:to\s+)?(.*)/i);setTimeout(()=>goApple('maps://?q='+encodeURIComponent((m&&m[1])||'nearby')),1000);}
-    if(/calendar|schedule|add.*event|meeting|appointment/.test(tl2)){
-      const m=text.match(/(?:add|schedule|create|put)(?:\s+a?n?)?(?:\s+event|meeting|appointment)?(?:\s+(?:called|titled|for|named))?(.*?)(?:\s+(?:on|at|for)\s+(.*))?$/i);
-      if(m&&m[1]) saveToGoogleCalendar(m[1].trim(), m[2]||null);
+    if(/calendar|schedule|add.*event|meeting|appointment|add.*meeting|add.*to.*calendar/.test(tl2)){
+      smartSaveToCalendar(text);
     }
     if(/(?:note|idea|remember|save that|jot)/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
     if(/stress|anxious|overwhelm|panic|freak/.test(tl2)) stressMode();
@@ -768,6 +767,34 @@ function speak(text){
 
 // ── TASKS ──
 function saveTasks(){localStorage.setItem('zbot_tasks',JSON.stringify(tasks.filter(t=>!t.fromGoogle)));}
+
+async function smartSaveToCalendar(userText) {
+  if (!gToken) { addBot("Connect Google Calendar first to save events! 🌸"); return; }
+  try {
+    const now = new Date();
+    const parseResp = await callProxy(
+      `Today is ${now.toDateString()} ${now.toLocaleTimeString()}. Extract event details from the user message and return ONLY valid JSON. Schema: {"title":"Event name","start":"2026-04-02T15:00:00","end":"2026-04-02T16:00:00"}. If no end time given assume 1 hour. If no date given assume today. If no time given assume 12:00. Return ONLY JSON no markdown.`,
+      userText, false
+    );
+    const parsed = JSON.parse(parseResp.replace(/\`\`\`json|\`\`\`/g,'').trim());
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + gToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        summary: parsed.title,
+        start: { dateTime: new Date(parsed.start).toISOString() },
+        end: { dateTime: new Date(parsed.end).toISOString() }
+      })
+    });
+    addBot(`✅ Saved "${parsed.title}" to your Google Calendar on ${new Date(parsed.start).toLocaleDateString()} at ${new Date(parsed.start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} 🌸`);
+    loadGoogleCalendar();
+  } catch(e) {
+    console.log('Calendar save error:', e);
+  }
+}
 
 async function saveToGoogleCalendar(title, dateStr) {
   if (!gToken) return;
