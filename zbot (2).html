@@ -585,7 +585,7 @@ function signInGoogle() {
   try {
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GCLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/tasks',
       callback: (resp) => {
         if (resp.access_token) {
           gToken = resp.access_token;
@@ -769,7 +769,8 @@ function speak(text){
 function saveTasks(){localStorage.setItem('zbot_tasks',JSON.stringify(tasks.filter(t=>!t.fromGoogle)));}
 
 async function smartSaveToCalendar(userText) {
-  if (!gToken) { addBot("Connect Google Calendar first to save events! 🌸"); return; }
+  if (!gToken) { addBot("Connect Google Calendar first — tap Today tab and sign in! 🌸"); return; }
+  addBot("Saving to your calendar... ⏳");
   try {
     const now = new Date();
     const parseResp = await callProxy(
