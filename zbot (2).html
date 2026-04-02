@@ -707,14 +707,14 @@ async function process(text) {
   const now=new Date();
   const tl=tasks.filter(t=>!t.done).map(t=>t.text).join(', ')||'none';
   const el=evs.map(e=>e.time+' '+e.name).join(', ')||'none';
-  const sys=`You are ZBOT, a warm, fun, slightly playful personal AI assistant. You'll be read aloud — write naturally, short (1-3 sentences). Use light emojis occasionally. Today: ${now.toDateString()} ${now.toLocaleTimeString()}. Location: ${wx.loc||'San Diego'}. Weather: ${wx.temp}, ${wx.desc}. Calendar: ${el}. Tasks: ${tl}. For calendar events say you'll open Apple Calendar. For directions say opening Maps. Sound like a warm smart best friend.`;
+  const sys=`You are ZBOT, a warm, fun, slightly playful personal AI assistant. You'll be read aloud — write naturally, short (1-3 sentences). Use light emojis occasionally. Today: ${now.toDateString()} ${now.toLocaleTimeString()}. Location: ${wx.loc||'San Diego'}. Weather: ${wx.temp}, ${wx.desc}. Calendar: ${el}. Tasks: ${tl}. When user wants to add a reminder or task, just confirm you've saved it to their Tasks tab — never mention Siri or Apple apps. For directions say opening Maps. Sound like a warm smart best friend.`;
   try {
     const reply=await callProxy(sys,null,true);
     ty.innerHTML=`<div class="nm">ZBOT ✦</div>${reply}`;
     hist.push({role:'assistant',content:reply});
     speak(reply);
     const tl2=text.toLowerCase();
-    if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){tasks.unshift({id:Date.now(),text:m[1].trim(),done:false,time:now.toLocaleString()});saveTasks();renderTasks();}}
+    if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){const rt=m[1].trim();tasks.unshift({id:Date.now(),text:rt,done:false,time:now.toLocaleString()});saveTasks();renderTasks();saveToGoogleTasks(rt);}}
     
     if(/navigate|direction|take me to|open maps|get me to/.test(tl2)){const m=text.match(/(?:navigate|directions?|take me to|open maps|get me to)\s+(?:to\s+)?(.*)/i);setTimeout(()=>goApple('maps://?q='+encodeURIComponent((m&&m[1])||'nearby')),1000);}
     if(/\b(?:note|idea|remember|save that|jot)\b/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
@@ -764,7 +764,21 @@ function speak(text){
 
 // ── TASKS ──
 function saveTasks(){localStorage.setItem('zbot_tasks',JSON.stringify(tasks.filter(t=>!t.fromGoogle)));}
-function addTask(){const i=document.getElementById('taskinp'),t=i.value.trim();if(!t)return;i.value='';tasks.unshift({id:Date.now(),text:t,done:false,time:new Date().toLocaleString()});saveTasks();renderTasks();}
+
+async function saveToGoogleTasks(text) {
+  if (!gToken) return;
+  try {
+    await fetch('https://www.googleapis.com/tasks/v1/lists/@default/tasks', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + gToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title: text, status: 'needsAction' })
+    });
+  } catch(e) { console.log('Google Tasks save failed:', e); }
+}
+function addTask(){const i=document.getElementById('taskinp'),t=i.value.trim();if(!t)return;i.value='';tasks.unshift({id:Date.now(),text:t,done:false,time:new Date().toLocaleString()});saveTasks();renderTasks();saveToGoogleTasks(t);}
 function toggleTask(id){const t=tasks.find(t=>t.id==id);if(t){t.done=!t.done;saveTasks();renderTasks();}}
 function delTask(id){tasks=tasks.filter(t=>t.id!=id);saveTasks();renderTasks();}
 function renderTasks(){
