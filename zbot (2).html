@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ZBOT">
+<title>ZBOT</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0a14;--bg1:#13101e;--bg2:#1a1528;--bg3:#221c35;
+  --p:#c084fc;--p2:#a855f7;--p3:#7c3aed;--pdark:#4c1d95;
+  --pglow:rgba(192,132,252,0.15);--pglow2:rgba(168,85,247,0.28);
+  --txt:#f0e8ff;--txt2:#a78bc4;--txt3:#5a4a72;
+  --border:rgba(192,132,252,0.12);--border2:rgba(192,132,252,0.28);
+  --rose:#fb7185;--teal:#5eead4;--amber:#fcd34d;
+}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh}
+
+/* SETUP */
+#setup{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;gap:14px;overflow-y:auto}
+#setup.hidden{display:none}
+.s-orb{width:80px;height:80px;border-radius:22px;background:linear-gradient(135deg,var(--p3),var(--p));display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:32px;color:#fff;box-shadow:0 0 40px var(--pglow2)}
+.s-title{font-family:'Playfair Display',serif;font-size:26px;color:var(--p);letter-spacing:2px}
+.s-sub{font-size:12px;color:var(--txt2);text-align:center;line-height:1.7;max-width:300px}
+.s-field{display:flex;flex-direction:column;gap:5px;width:100%;max-width:340px}
+.s-label{font-size:10px;color:var(--txt2);letter-spacing:1px;text-transform:uppercase;padding-left:4px}
+.sinput{width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:14px;padding:13px 16px;color:var(--txt);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
+.sinput:focus{border-color:var(--p);box-shadow:0 0 0 3px var(--pglow)}
+.sinput::placeholder{color:var(--txt3)}
+#gobtn{width:100%;max-width:340px;background:linear-gradient(135deg,var(--p3),var(--p));color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 24px var(--pglow2)}
+.snote{font-size:11px;color:var(--txt3);text-align:center;max-width:300px;line-height:1.6}
+.snote a{color:var(--p);text-decoration:none}
+
+/* HEADER */
+#hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;padding-top:calc(env(safe-area-inset-top,0px) + 14px);background:var(--bg1);border-bottom:0.5px solid var(--border);flex-shrink:0;z-index:10}
+#zlogo{width:38px;height:38px;background:linear-gradient(135deg,var(--p3),var(--p));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:18px;color:#fff;box-shadow:0 2px 12px var(--pglow2)}
+#zname{font-family:'Playfair Display',serif;font-size:18px;color:var(--p)}
+#zsub{font-size:10px;color:var(--txt3);margin-top:1px}
+#dot{margin-left:auto;width:8px;height:8px;background:var(--p);border-radius:50%;animation:glow 2s infinite;flex-shrink:0}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 var(--pglow2)}60%{box-shadow:0 0 0 8px rgba(168,85,247,0)}}
+
+/* STRESS BUTTON in header */
+#stressbtn{background:linear-gradient(135deg,#be185d,#ec4899);border:none;border-radius:20px;padding:6px 12px;font-size:11px;font-weight:500;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:8px;flex-shrink:0;animation:none;transition:transform .15s}
+#stressbtn:active{transform:scale(0.94)}
+#stressbtn.laughing{animation:wiggle .4s ease}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+
+/* TABS */
+#tabs{display:flex;background:var(--bg1);border-bottom:0.5px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:10px 2px;font-size:10px;font-weight:500;color:var(--txt3);text-align:center;cursor:pointer;border:none;background:none;letter-spacing:.8px;text-transform:uppercase;font-family:'DM Sans',sans-serif;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab.on{color:var(--p);border-bottom-color:var(--p)}
+
+/* PANELS */
+#panels{flex:1;overflow:hidden;position:relative;min-height:0}
+.panel{position:absolute;inset:0;display:none;flex-direction:column}
+.panel.on{display:flex}
+
+/* ALARM BANNER */
+#alarm-banner{display:none;background:linear-gradient(135deg,var(--pdark),var(--p3));border-bottom:0.5px solid var(--border2);padding:12px 18px;flex-shrink:0;z-index:50}
+#alarm-banner.show{display:flex;align-items:center;gap:12px}
+#alarm-icon{font-size:22px;animation:ring .6s infinite alternate}
+@keyframes ring{from{transform:rotate(-15deg)}to{transform:rotate(15deg)}}
+#alarm-txt{flex:1;font-size:13px;color:#fff;font-weight:500}
+#alarm-dismiss{background:rgba(255,255,255,0.2);border:none;border-radius:8px;padding:5px 12px;color:#fff;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* CHAT */
+#msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.msg{max-width:86%;animation:pop .22s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.u{align-self:flex-end;background:linear-gradient(135deg,var(--p3),var(--p2));border-radius:18px 18px 4px 18px;padding:11px 15px;font-size:14px;color:#fff;line-height:1.5;box-shadow:0 4px 16px var(--pglow2)}
+.msg.b{align-self:flex-start;background:var(--bg2);border:0.5px solid var(--border);border-radius:4px 18px 18px 18px;padding:11px 15px;font-size:14px;color:var(--txt);line-height:1.55}
+.msg.joke{background:linear-gradient(135deg,#1e1030,#2d1b4e);border-color:var(--border2)}
+.nm{font-size:8px;color:var(--p);letter-spacing:2px;margin-bottom:5px;font-weight:500;text-transform:uppercase}
+.dots span{display:inline-block;width:5px;height:5px;background:var(--p);border-radius:50%;margin:0 2px;animation:bounce .8s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+
+#spkbar{display:none;align-items:center;justify-content:center;gap:5px;padding:7px;background:var(--bg1);border-top:0.5px solid var(--border);flex-shrink:0}
+#spkbar.on{display:flex}
+.bar{width:3px;height:14px;background:var(--p);border-radius:2px;animation:bars .7s ease-in-out infinite}
+.bar:nth-child(2){animation-delay:.1s}.bar:nth-child(3){animation-delay:.2s}.bar:nth-child(4){animation-delay:.3s}.bar:nth-child(5){animation-delay:.15s}
+@keyframes bars{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1.3)}}
+#spklabel{font-size:9px;color:var(--p);letter-spacing:2px;text-transform:uppercase}
+
+#inprow{padding:10px 14px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);border-top:0.5px solid var(--border);background:var(--bg1);display:flex;align-items:center;gap:10px;flex-shrink:0}
+#inp{flex:1;background:var(--bg2);border:0.5px solid var(--border);border-radius:24px;padding:12px 16px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+#inp:focus{border-color:var(--p)}
+#inp::placeholder{color:var(--txt3)}
+#sndbtn{background:linear-gradient(135deg,var(--p3),var(--p));color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px var(--pglow2)}
+#micbtn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--p);background:var(--pglow);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s}
+#micbtn.on{background:linear-gradient(135deg,var(--p3),var(--p));border-color:transparent;animation:mg 1s infinite}
+@keyframes mg{0%,100%{box-shadow:0 0 0 0 var(--pglow2)}50%{box-shadow:0 0 0 14px rgba(168,85,247,0)}}
+#micbtn svg{width:18px;height:18px;fill:var(--p);transition:fill .2s}
+#micbtn.on svg{fill:#fff}
+
+/* TODAY */
+.scrl{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch}
+.slabel{font-size:9px;letter-spacing:2px;color:var(--txt3);margin-bottom:8px;text-transform:uppercase;font-weight:500}
+
+.quote-card{background:linear-gradient(135deg,var(--pdark),var(--bg3));border:0.5px solid var(--border2);border-radius:18px;padding:18px;position:relative;overflow:hidden}
+.quote-card::before{content:'\201C';position:absolute;top:-8px;left:12px;font-family:'Playfair Display',serif;font-size:72px;color:var(--p);opacity:.15;line-height:1;pointer-events:none}
+.quote-txt{font-family:'Playfair Display',serif;font-size:14px;color:var(--txt);line-height:1.65;font-style:italic;position:relative}
+.quote-author{font-size:11px;color:var(--p);margin-top:8px}
+
+.wx-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:18px;padding:18px;display:flex;align-items:center;gap:16px}
+.wx-icon{font-size:40px}
+.wx-temp{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--txt)}
+.wx-desc{font-size:12px;color:var(--txt2);margin-top:2px}
+.wx-loc{font-size:11px;color:var(--p);margin-top:4px}
+
+/* ALARM CARD in Today */
+.alarm-card{background:linear-gradient(135deg,#1e1030,#2a1045);border:0.5px solid var(--border2);border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.alarm-left{flex:1}
+.alarm-title{font-size:13px;font-weight:500;color:var(--txt);margin-bottom:4px}
+.alarm-time{font-family:'Playfair Display',serif;font-size:28px;color:var(--p)}
+.alarm-sub{font-size:11px;color:var(--txt3);margin-top:4px}
+.alarm-toggle{width:50px;height:28px;border-radius:14px;background:var(--bg3);border:0.5px solid var(--border2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.alarm-toggle.on{background:linear-gradient(135deg,var(--p3),var(--p))}
+.alarm-toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.alarm-toggle.on::after{transform:translateX(22px)}
+
+.ev-item{background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:13px 15px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin-bottom:8px;transition:border-color .15s}
+.ev-item:active{border-color:var(--p)}
+.ev-dot{width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0;margin-top:4px}
+.ev-time{font-size:10px;color:var(--p);min-width:52px;margin-top:1px;letter-spacing:.5px}
+.ev-name{font-size:13px;font-weight:500;color:var(--txt)}
+.ev-loc{font-size:11px;color:var(--p);margin-top:3px}
+.empty{font-size:12px;color:var(--txt3);text-align:center;padding:20px;font-style:italic}
+
+.abtn{display:flex;align-items:center;gap:12px;padding:14px 15px;background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;cursor:pointer;margin-bottom:8px;transition:border-color .15s}
+.abtn:active{border-color:var(--p)}
+.aicon{font-size:20px;flex-shrink:0;width:36px;height:36px;background:var(--pglow);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.albl{font-size:13px;font-weight:500;color:var(--txt)}
+.asub{font-size:11px;color:var(--txt2);margin-top:2px}
+
+/* TASKS */
+.titem{background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.tchk{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--p);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s;font-size:12px;color:#fff}
+.tchk.done{background:linear-gradient(135deg,var(--p3),var(--p));border-color:transparent}
+.ttxt{font-size:13px;flex:1;color:var(--txt);line-height:1.4}
+.ttxt.done{color:var(--txt3);text-decoration:line-through}
+.tdel{background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer;padding:0 4px}
+.addrow{padding:10px 14px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);border-top:0.5px solid var(--border);background:var(--bg1);display:flex;gap:10px;flex-shrink:0}
+.addinp{flex:1;background:var(--bg2);border:0.5px solid var(--border);border-radius:24px;padding:12px 16px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.addinp:focus{border-color:var(--p)}
+.addinp::placeholder{color:var(--txt3)}
+.addbtn{background:linear-gradient(135deg,var(--p3),var(--p));color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 12px var(--pglow2)}
+
+/* NOTES */
+.ncard{background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:14px 15px;position:relative;margin-bottom:8px}
+.ntxt{font-size:13px;color:var(--txt);line-height:1.6;padding-right:28px}
+.ntime{font-size:10px;color:var(--txt3);margin-top:8px}
+.ndel{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--txt3);font-size:16px;cursor:pointer}
+
+#gcal-banner{display:none;background:var(--pdark);border:0.5px solid var(--p);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--p);text-align:center;line-height:1.5;margin-bottom:4px}
+#gcal-banner.show{display:block}
+#gcal-banner a{color:#fff;font-weight:500;text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="s-orb">Z</div>
+  <div class="s-title">ZBOT</div>
+  <p class="s-sub">Your personal AI assistant ✨ Set up once, magic forever.</p>
+  <div class="s-field">
+    <div class="s-label">Cloudflare Worker URL</div>
+    <input class="sinput" type="url" id="wurl" placeholder="https://zbot.yourname.workers.dev" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="s-field">
+    <div class="s-label">Claude API Key</div>
+    <input class="sinput" type="password" id="akey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+  </div>
+  <button id="gobtn" onclick="saveSetup()">Launch ZBOT ✨</button>
+  <p class="snote">Google Calendar is already connected 🌸<br>Get Claude key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+</div>
+
+<!-- ALARM BANNER -->
+<div id="alarm-banner">
+  <div id="alarm-icon">🔔</div>
+  <div id="alarm-txt">Good morning! Your daily briefing is ready ✨</div>
+  <button id="alarm-dismiss" onclick="dismissAlarm()">Dismiss</button>
+</div>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div id="zlogo">Z</div>
+  <div><div id="zname">ZBOT</div><div id="zsub">your personal assistant</div></div>
+  <button id="stressbtn" onclick="stressMode()">😩 help</button>
+  <div id="dot"></div>
+</div>
+
+<!-- TABS -->
+<div id="tabs">
+  <button class="tab on" onclick="showTab('chat')">Chat</button>
+  <button class="tab" onclick="showTab('today')">Today</button>
+  <button class="tab" onclick="showTab('tasks')">Tasks</button>
+  <button class="tab" onclick="showTab('notes')">Notes</button>
+</div>
+
+<div id="panels">
+
+  <!-- CHAT -->
+  <div class="panel on" id="panel-chat">
+    <div id="msgs">
+      <div class="msg b"><div class="nm">ZBOT ✦</div>Hey! 🌸 I'm ZBOT. Tap the mic and talk to me — I'll check your weather, read your calendar, and manage your day. Feeling stressed? Hit the 😩 button!</div>
+    </div>
+    <div id="spkbar"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><span id="spklabel">ZBOT speaking</span></div>
+    <div id="inprow">
+      <div id="micbtn" onclick="toggleMic()"><svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4zm-2 4a2 2 0 0 1 4 0v6a2 2 0 0 1-4 0V5zm-5 6a7 7 0 0 0 14 0h-2a5 5 0 0 1-10 0H5zm7 8v2h-2v-2a9 9 0 0 1-6.33-2.68l1.42-1.42A7 7 0 0 0 12 20a7 7 0 0 0 4.91-2.1l1.42 1.42A9 9 0 0 1 12 21z"/></svg></div>
+      <input id="inp" placeholder="Talk to ZBOT..." onkeydown="if(event.key==='Enter')sendText()">
+      <button id="sndbtn" onclick="sendText()">↑</button>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <div class="panel" id="panel-today">
+    <div class="scrl">
+      <div id="gcal-banner"><a href="#" onclick="signInGoogle();return false;">Connect Google Calendar to see real events →</a></div>
+      <div>
+        <div class="slabel">Daily Spark ✦</div>
+        <div class="quote-card"><div class="quote-txt" id="quote-txt">Loading your daily quote...</div><div class="quote-author" id="quote-author"></div></div>
+      </div>
+      <div>
+        <div class="slabel">Weather 🌤</div>
+        <div class="wx-card"><div class="wx-icon" id="wxicon">⏳</div><div><div class="wx-temp" id="wxtmp">--°</div><div class="wx-desc" id="wxdsc">Detecting location...</div><div class="wx-loc" id="wxloc">Locating you...</div></div></div>
+      </div>
+      <div>
+        <div class="slabel">Morning Alarm ⏰</div>
+        <div class="alarm-card">
+          <div class="alarm-left">
+            <div class="alarm-title">Daily Briefing</div>
+            <div class="alarm-time">10:00 AM</div>
+            <div class="alarm-sub" id="alarm-status">Checking...</div>
+          </div>
+          <div class="alarm-toggle" id="alarm-toggle" onclick="toggleAlarm()"></div>
+        </div>
+      </div>
+      <div>
+        <div class="slabel">Today's Events 📅</div>
+        <div id="evlist"><div class="empty">Loading your calendar...</div></div>
+      </div>
+      <div>
+        <div class="slabel">Quick Actions</div>
+        <div class="abtn" onclick="goApple('calshow://')"><div class="aicon">📅</div><div><div class="albl">Apple Calendar</div><div class="asub">View and add events</div></div></div>
+        <div class="abtn" onclick="goApple('x-apple-reminderkit://')"><div class="aicon">✅</div><div><div class="albl">Apple Reminders</div><div class="asub">View all reminders</div></div></div>
+        <div class="abtn" onclick="goApple('applenotes://')"><div class="aicon">📝</div><div><div class="albl">Apple Notes</div><div class="asub">Open Notes app</div></div></div>
+        <div class="abtn" onclick="goApple('maps://')"><div class="aicon">🗺</div><div><div class="albl">Apple Maps</div><div class="asub">Navigate anywhere</div></div></div>
+        <div class="abtn" onclick="resetSetup()"><div class="aicon">⚙️</div><div><div class="albl">Settings</div><div class="asub">Update keys</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="panel" id="panel-tasks">
+    <div class="scrl" id="tasklist"></div>
+    <div class="addrow">
+      <input class="addinp" id="taskinp" placeholder="Add a task or reminder..." onkeydown="if(event.key==='Enter')addTask()">
+      <button class="addbtn" onclick="addTask()">+</button>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="panel" id="panel-notes">
+    <div class="scrl" id="notelist"></div>
+    <div class="addrow">
+      <input class="addinp" id="noteinp" placeholder="Capture an idea..." onkeydown="if(event.key==='Enter')addNote()">
+      <button class="addbtn" onclick="addNote()">+</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const GCLIENT_ID = '186421994945-tkqcg90g8budulhqbdc5c09rp2fe65m3.apps.googleusercontent.com';
+const BRIEFING_HOUR = 10;
+const BRIEFING_MIN = 0;
+
+let PROXY = localStorage.getItem('zbot_proxy') || '';
+let KEY = localStorage.getItem('zbot_key') || '';
+let gToken = null;
+let hist = [];
+let tasks = JSON.parse(localStorage.getItem('zbot_tasks') || '[]');
+let notes = JSON.parse(localStorage.getItem('zbot_notes') || '[]');
+let alarmOn = localStorage.getItem('zbot_alarm') !== 'off';
+let wx = {temp:'--', desc:'', icon:'🌸', loc:''};
+let evs = [];
+let recog = null, listening = false, speaking = false;
+let alarmFired = false;
+const synth = window.speechSynthesis;
+
+const JOKES = [
+  ["Why don't scientists trust atoms?", "Because they make up everything! 😂"],
+  ["What do you call a fake noodle?", "An impasta! 🍝"],
+  ["Why did the scarecrow win an award?", "Because he was outstanding in his field! 🌾"],
+  ["What do you call cheese that isn't yours?", "Nacho cheese! 🧀"],
+  ["Why can't you give Elsa a balloon?", "Because she'll let it go! 🎈"],
+  ["What do you call a sleeping dinosaur?", "A dino-snore! 🦕"],
+  ["Why did the bicycle fall over?", "Because it was two-tired! 🚲"],
+  ["What did the ocean say to the beach?", "Nothing, it just waved! 🌊"],
+  ["Why don't eggs tell jokes?", "They'd crack each other up! 🥚"],
+  ["What do you call a bear with no teeth?", "A gummy bear! 🐻"],
+  ["Why did the math book look so sad?", "Because it had too many problems! 📚"],
+  ["What do you call a fish without eyes?", "A fsh! 🐟"],
+  ["Why did the golfer bring extra pants?", "In case he got a hole in one! ⛳"],
+  ["What do you call a snowman with a six-pack?", "An abdominal snowman! ⛄"],
+  ["Why did the tomato turn red?", "Because it saw the salad dressing! 🥗"],
+];
+let jokeIdx = Math.floor(Math.random()*JOKES.length);
+
+if (PROXY && KEY) {
+  document.getElementById('setup').classList.add('hidden');
+  boot();
+} else {
+  ['hdr','tabs','panels','alarm-banner'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+}
+
+function saveSetup() {
+  const w = document.getElementById('wurl').value.trim();
+  const k = document.getElementById('akey').value.trim();
+  if (!w) { alert('Please enter your Worker URL'); return; }
+  if (!k) { alert('Please enter your Claude API key'); return; }
+  if (!w.startsWith('http')) { alert('Worker URL should start with https://\n\nYou entered: ' + w.substring(0,50)); return; }
+  if (!k.startsWith('sk-')) { alert('API key looks wrong — should start with sk-ant-\n\nYou entered: ' + k.substring(0,20)); return; }
+  localStorage.setItem('zbot_proxy', w);
+  localStorage.setItem('zbot_key', k);
+  PROXY = w; KEY = k;
+  document.getElementById('setup').classList.add('hidden');
+  ['hdr','tabs','panels'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
+  boot();
+}
+
+function resetSetup() {
+  document.getElementById('wurl').value = PROXY;
+  document.getElementById('akey').value = KEY;
+  document.getElementById('setup').classList.remove('hidden');
+  ['hdr','tabs','panels'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+}
+
+function boot() {
+  renderTasks(); renderNotes();
+  updateAlarmUI();
+  getLocation();
+  loadQuote();
+  synth.getVoices(); synth.onvoiceschanged = () => synth.getVoices();
+  initGoogle();
+  startAlarmChecker();
+}
+
+function showTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('on', ['chat','today','tasks','notes'][i] === n));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.getElementById('panel-'+n).classList.add('on');
+}
+
+function goApple(url) { window.location.href = url; }
+
+// ── ALARM ──
+function startAlarmChecker() {
+  checkAlarm();
+  setInterval(checkAlarm, 30000);
+}
+
+function checkAlarm() {
+  if (!alarmOn || alarmFired) return;
+  const now = new Date();
+  if (now.getHours() === BRIEFING_HOUR && now.getMinutes() === BRIEFING_MIN) {
+    triggerAlarm();
+  }
+  // Also check if we just opened the app near alarm time (within 5 min)
+  const diffMin = (now.getHours()-BRIEFING_HOUR)*60 + (now.getMinutes()-BRIEFING_MIN);
+  const lastFired = localStorage.getItem('zbot_last_briefing');
+  const today = now.toDateString();
+  if (diffMin >= 0 && diffMin <= 5 && lastFired !== today) {
+    triggerAlarm();
+  }
+}
+
+function triggerAlarm() {
+  const today = new Date().toDateString();
+  localStorage.setItem('zbot_last_briefing', today);
+  alarmFired = true;
+  document.getElementById('alarm-banner').classList.add('show');
+  showTab('chat');
+  setTimeout(() => deliverMorningBriefing(), 800);
+}
+
+function dismissAlarm() {
+  document.getElementById('alarm-banner').classList.remove('show');
+}
+
+function toggleAlarm() {
+  alarmOn = !alarmOn;
+  localStorage.setItem('zbot_alarm', alarmOn ? 'on' : 'off');
+  updateAlarmUI();
+}
+
+function updateAlarmUI() {
+  const tog = document.getElementById('alarm-toggle');
+  const status = document.getElementById('alarm-status');
+  if (alarmOn) {
+    tog.classList.add('on');
+    status.textContent = 'Every day at 10:00 AM ✨';
+    status.style.color = 'var(--p)';
+  } else {
+    tog.classList.remove('on');
+    status.textContent = 'Tap to enable';
+    status.style.color = 'var(--txt3)';
+  }
+}
+
+// ── STRESS MODE ──
+async function stressMode() {
+  const btn = document.getElementById('stressbtn');
+  btn.classList.add('laughing');
+  setTimeout(() => btn.classList.remove('laughing'), 400);
+  showTab('chat');
+  const joke = JOKES[jokeIdx % JOKES.length];
+  jokeIdx++;
+  const setup = joke[0];
+  const punchline = joke[1];
+
+  const el1 = addBot(setup);
+  el1.classList.add('joke');
+  speak(setup);
+  await new Promise(r => setTimeout(r, 2200));
+  const el2 = addBot('...' + punchline);
+  el2.classList.add('joke');
+  speak(punchline);
+}
+
+// ── LOCATION + WEATHER ──
+function getLocation() {
+  if (!navigator.geolocation) { loadWeather(32.7157, -117.1611, 'San Diego'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => loadWeather(pos.coords.latitude, pos.coords.longitude, null),
+    () => loadWeather(32.7157, -117.1611, 'San Diego')
+  );
+}
+
+async function loadWeather(lat, lon, fallbackCity) {
+  try {
+    const raw = await callProxy(
+      'Return ONLY valid JSON, no markdown. Schema: {"temp":"72°F","desc":"Partly cloudy","icon":"🌤","city":"San Diego","feels":"70°F"}',
+      `Current weather for coordinates ${lat},${lon}. Today is ${new Date().toDateString()}. JSON only.`,
+      false
+    );
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    wx = p;
+    document.getElementById('wxicon').textContent = p.icon || '🌤';
+    document.getElementById('wxtmp').textContent = p.temp;
+    document.getElementById('wxdsc').textContent = p.desc + (p.feels ? ' · Feels ' + p.feels : '');
+    document.getElementById('wxloc').textContent = '📍 ' + (p.city || fallbackCity || 'Your location');
+  } catch(e) {
+    document.getElementById('wxdsc').textContent = 'Could not load';
+    document.getElementById('wxloc').textContent = fallbackCity || 'Unknown';
+  }
+}
+
+// ── QUOTE ──
+async function loadQuote() {
+  try {
+    const raw = await callProxy(
+      'Return ONLY valid JSON. Schema: {"quote":"text","author":"Name"}. Pick something beautiful and uplifting. No markdown.',
+      'Give me one inspiring quote for today. JSON only.',
+      false
+    );
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('quote-txt').textContent = p.quote;
+    document.getElementById('quote-author').textContent = '— ' + p.author;
+  } catch(e) {
+    document.getElementById('quote-txt').textContent = 'You are doing better than you think. 🌸';
+    document.getElementById('quote-author').textContent = '— ZBOT';
+  }
+}
+
+// ── GOOGLE CALENDAR ──
+function initGoogle() {
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.onload = () => {
+    try {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GCLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+        callback: (resp) => {
+          if (resp.access_token) {
+            gToken = resp.access_token;
+            document.getElementById('gcal-banner').classList.remove('show');
+            loadGoogleCalendar();
+            loadGoogleTasks();
+          }
+        }
+      });
+      tokenClient.requestAccessToken({prompt:''});
+    } catch(e) {
+      document.getElementById('gcal-banner').classList.add('show');
+      loadFallbackBriefing();
+    }
+  };
+  script.onerror = () => {
+    document.getElementById('gcal-banner').classList.add('show');
+    loadFallbackBriefing();
+  };
+  document.head.appendChild(script);
+}
+
+function signInGoogle() {
+  try {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GCLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks',
+      callback: (resp) => {
+        if (resp.access_token) {
+          gToken = resp.access_token;
+          document.getElementById('gcal-banner').classList.remove('show');
+          loadGoogleCalendar();
+          loadGoogleTasks();
+        }
+      }
+    });
+    tokenClient.requestAccessToken();
+  } catch(e) { alert('Google sign in failed — try again'); }
+}
+
+async function loadGoogleCalendar() {
+  if (!gToken) return;
+  try {
+    const now = new Date();
+    const start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0).toISOString();
+    const end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59).toISOString();
+    const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime`, {
+      headers:{Authorization:'Bearer '+gToken}
+    });
+    const data = await resp.json();
+    evs = (data.items||[]).map(e => ({
+      time: e.start.dateTime ? new Date(e.start.dateTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'All day',
+      name: e.summary || 'Event',
+      location: e.location || ''
+    }));
+    renderEvs();
+    deliverMorningBriefing();
+  } catch(e) { renderEvs(); deliverMorningBriefing(); }
+}
+
+async function loadGoogleTasks() {
+  if (!gToken) return;
+  try {
+    const resp = await fetch('https://www.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=false&maxResults=20', {
+      headers:{Authorization:'Bearer '+gToken}
+    });
+    const data = await resp.json();
+    const gt = (data.items||[]).filter(t=>t.status!=='completed').map(t=>({
+      id:'g_'+t.id, text:t.title, done:false, time:'', fromGoogle:true
+    }));
+    const local = tasks.filter(t=>!t.fromGoogle);
+    tasks = [...gt, ...local];
+    renderTasks();
+  } catch(e) {}
+}
+
+function loadFallbackBriefing() {
+  renderEvs();
+  deliverMorningBriefing();
+}
+
+function renderEvs() {
+  const el = document.getElementById('evlist');
+  if (!evs.length) {
+    el.innerHTML = '<div class="empty">No events today — enjoy your free day! ✨</div>';
+  } else {
+    el.innerHTML = evs.map(e => `
+      <div class="ev-item" onclick="goApple('calshow://')">
+        <div class="ev-dot"></div>
+        <div style="flex:1">
+          <div style="display:flex;gap:8px;align-items:baseline">
+            <div class="ev-time">${e.time}</div>
+            <div class="ev-name">${e.name}</div>
+          </div>
+          ${e.location?`<div class="ev-loc" onclick="event.stopPropagation();goApple('maps://?q=${encodeURIComponent(e.location)}')">📍 ${e.location}</div>`:''}
+        </div>
+      </div>`).join('');
+  }
+}
+
+async function deliverMorningBriefing() {
+  const now = new Date(), h = now.getHours();
+  const g = h<12?'Good morning':h<17?'Hey there':'Good evening';
+  const evStr = evs.length
+    ? `You have ${evs.length} event${evs.length>1?'s':''} today — ${evs.slice(0,2).map(e=>e.name).join(' and ')}${evs.length>2?' and more':''}.`
+    : 'Your calendar is clear today.';
+  const wxStr = wx.temp&&wx.temp!=='--' ? `It's ${wx.desc}, ${wx.temp}${wx.loc?' in '+wx.loc.replace('📍 ',''):''}.` : '';
+  const pendingTasks = tasks.filter(t=>!t.done).length;
+  const taskStr = pendingTasks ? `You have ${pendingTasks} task${pendingTasks>1?'s':''} pending.` : '';
+  const msg = `${g}! 🌸 ${wxStr} ${evStr} ${taskStr} Tap the mic to talk to me anytime.`;
+  addBot(msg);
+  setTimeout(() => speak(msg), 500);
+}
+
+// ── CHAT ──
+function addBot(text) {
+  const c=document.getElementById('msgs'), el=document.createElement('div');
+  el.className='msg b'; el.innerHTML=`<div class="nm">ZBOT ✦</div>${text}`;
+  c.appendChild(el); c.scrollTop=c.scrollHeight; return el;
+}
+function addUser(text) {
+  const c=document.getElementById('msgs'), el=document.createElement('div');
+  el.className='msg u'; el.textContent=text; c.appendChild(el); c.scrollTop=c.scrollHeight;
+}
+function addTyping() {
+  const c=document.getElementById('msgs'), el=document.createElement('div');
+  el.className='msg b'; el.innerHTML=`<div class="nm">ZBOT ✦</div><div class="dots"><span></span><span></span><span></span></div>`;
+  c.appendChild(el); c.scrollTop=c.scrollHeight; return el;
+}
+
+async function sendText() {
+  const inp=document.getElementById('inp'), t=inp.value.trim();
+  if(!t) return; inp.value=''; process(t);
+}
+
+async function process(text) {
+  addUser(text);
+  const ty=addTyping();
+  hist.push({role:'user',content:text});
+  const now=new Date();
+  const tl=tasks.filter(t=>!t.done).map(t=>t.text).join(', ')||'none';
+  const el=evs.map(e=>e.time+' '+e.name).join(', ')||'none';
+  const sys=`You are ZBOT, a warm, fun, slightly playful personal AI assistant. You'll be read aloud — write naturally, short (1-3 sentences). Use light emojis occasionally. Today: ${now.toDateString()} ${now.toLocaleTimeString()}. Location: ${wx.loc||'San Diego'}. Weather: ${wx.temp}, ${wx.desc}. Calendar: ${el}. Tasks: ${tl}. For calendar events say you'll open Apple Calendar. For directions say opening Maps. Sound like a warm smart best friend.`;
+  try {
+    const reply=await callProxy(sys,null,true);
+    ty.innerHTML=`<div class="nm">ZBOT ✦</div>${reply}`;
+    hist.push({role:'assistant',content:reply});
+    speak(reply);
+    const tl2=text.toLowerCase();
+    if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){tasks.unshift({id:Date.now(),text:m[1].trim(),done:false,time:now.toLocaleString()});saveTasks();renderTasks();setTimeout(()=>goApple('x-apple-reminderkit://'),1400);}}
+    if(/calendar|schedule|add.*event|meeting|appointment/.test(tl2)){setTimeout(()=>goApple('calshow://'),1400);}
+    if(/navigate|direction|take me to|open maps|get me to/.test(tl2)){const m=text.match(/(?:navigate|directions?|take me to|open maps|get me to)\s+(?:to\s+)?(.*)/i);setTimeout(()=>goApple('maps://?q='+encodeURIComponent((m&&m[1])||'nearby')),1000);}
+    if(/\b(?:note|idea|remember|save that|jot)\b/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
+    if(/stress|anxious|overwhelm|panic|freak/.test(tl2)) stressMode();
+  } catch(e) {
+    ty.innerHTML=`<div class="nm">ZBOT ✦</div>Hmm, I had a hiccup 🌸 Check your worker URL in Settings. (${e.message})`;
+  }
+  document.getElementById('msgs').scrollTop=99999;
+}
+
+async function callProxy(sys,single,useHist) {
+  const messages=useHist&&hist.length?hist.slice(-14):[{role:'user',content:single}];
+  const r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:500,system:sys,messages})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+r.status);}
+  const d=await r.json();
+  return d.content?.find(b=>b.type==='text')?.text||'';
+}
+
+// ── VOICE ──
+function toggleMic() {
+  if(speaking){synth.cancel();speaking=false;document.getElementById('spkbar').classList.remove('on');}
+  if(listening){stopListen();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){addBot('Voice needs Safari on iPhone 🌸 Try typing!');return;}
+  recog=new SR();recog.lang='en-US';recog.continuous=false;recog.interimResults=false;
+  recog.onstart=()=>{listening=true;document.getElementById('micbtn').classList.add('on');};
+  recog.onresult=e=>{const t=e.results[0][0].transcript.trim();stopListen();if(t)process(t);};
+  recog.onerror=recog.onend=()=>stopListen();
+  recog.start();
+}
+function stopListen(){
+  listening=false;
+  if(recog){try{recog.stop()}catch(e){}recog=null;}
+  document.getElementById('micbtn').classList.remove('on');
+}
+function speak(text){
+  if(!synth)return;synth.cancel();
+  const u=new SpeechSynthesisUtterance(text.replace(/[*_`#>✦🌸✨📅✅📝🗺⚙️📍🔔😩]/g,'').trim());
+  u.rate=1.05;u.pitch=1.1;u.volume=1;
+  const vs=synth.getVoices();
+  const pick=vs.find(v=>v.name==='Samantha')||vs.find(v=>v.name.includes('Karen'))||vs.find(v=>v.lang==='en-US'&&v.localService)||vs.find(v=>v.lang.startsWith('en'));
+  if(pick)u.voice=pick;
+  u.onstart=()=>{speaking=true;document.getElementById('spkbar').classList.add('on');};
+  u.onend=()=>{speaking=false;document.getElementById('spkbar').classList.remove('on');};
+  synth.speak(u);
+}
+
+// ── TASKS ──
+function saveTasks(){localStorage.setItem('zbot_tasks',JSON.stringify(tasks.filter(t=>!t.fromGoogle)));}
+function addTask(){const i=document.getElementById('taskinp'),t=i.value.trim();if(!t)return;i.value='';tasks.unshift({id:Date.now(),text:t,done:false,time:new Date().toLocaleString()});saveTasks();renderTasks();}
+function toggleTask(id){const t=tasks.find(t=>t.id==id);if(t){t.done=!t.done;saveTasks();renderTasks();}}
+function delTask(id){tasks=tasks.filter(t=>t.id!=id);saveTasks();renderTasks();}
+function renderTasks(){
+  const el=document.getElementById('tasklist');
+  if(!tasks.length){el.innerHTML='<div class="empty">No tasks yet — add one below or tell ZBOT 🌸</div>';return;}
+  el.innerHTML=tasks.map(t=>`<div class="titem"><div class="tchk ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div><div class="ttxt ${t.done?'done':''}">${t.text}</div><button class="tdel" onclick="delTask('${t.id}')">×</button></div>`).join('');
+}
+
+// ── NOTES ──
+function saveNotes(){localStorage.setItem('zbot_notes',JSON.stringify(notes));}
+function addNote(){const i=document.getElementById('noteinp'),t=i.value.trim();if(!t)return;i.value='';notes.unshift({id:Date.now(),text:'✦ '+t,time:new Date().toLocaleString()});saveNotes();renderNotes();}
+function delNote(id){notes=notes.filter(n=>n.id!=id);saveNotes();renderNotes();}
+function renderNotes(){
+  const el=document.getElementById('notelist');
+  if(!notes.length){el.innerHTML='<div class="empty">No ideas yet — say "note that..." or type below ✨</div>';return;}
+  el.innerHTML=notes.map(n=>`<div class="ncard"><button class="ndel" onclick="delNote(${n.id})">×</button><div class="ntxt">${n.text}</div><div class="ntime">✦ ${n.time}</div></div>`).join('');
+}
+</script>
+</body>
+</html>
