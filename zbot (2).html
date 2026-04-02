@@ -717,7 +717,11 @@ async function process(text) {
     if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){const rt=m[1].trim();tasks.unshift({id:Date.now(),text:rt,done:false,time:now.toLocaleString()});saveTasks();renderTasks();saveToGoogleTasks(rt);}}
     
     if(/navigate|direction|take me to|open maps|get me to/.test(tl2)){const m=text.match(/(?:navigate|directions?|take me to|open maps|get me to)\s+(?:to\s+)?(.*)/i);setTimeout(()=>goApple('maps://?q='+encodeURIComponent((m&&m[1])||'nearby')),1000);}
-    if(/\b(?:note|idea|remember|save that|jot)\b/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
+    if(/calendar|schedule|add.*event|meeting|appointment/.test(tl2)){
+      const m=text.match(/(?:add|schedule|create|put)(?:\s+a?n?)?(?:\s+event|meeting|appointment)?(?:\s+(?:called|titled|for|named))?(.*?)(?:\s+(?:on|at|for)\s+(.*))?$/i);
+      if(m&&m[1]) saveToGoogleCalendar(m[1].trim(), m[2]||null);
+    }
+    if(/(?:note|idea|remember|save that|jot)/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
     if(/stress|anxious|overwhelm|panic|freak/.test(tl2)) stressMode();
   } catch(e) {
     ty.innerHTML=`<div class="nm">ZBOT ✦</div>Hmm, I had a hiccup 🌸 Check your worker URL in Settings. (${e.message})`;
@@ -764,6 +768,26 @@ function speak(text){
 
 // ── TASKS ──
 function saveTasks(){localStorage.setItem('zbot_tasks',JSON.stringify(tasks.filter(t=>!t.fromGoogle)));}
+
+async function saveToGoogleCalendar(title, dateStr) {
+  if (!gToken) return;
+  try {
+    const start = dateStr ? new Date(dateStr) : new Date();
+    const end = new Date(start.getTime() + 60*60*1000);
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + gToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        summary: title,
+        start: { dateTime: start.toISOString() },
+        end: { dateTime: end.toISOString() }
+      })
+    });
+  } catch(e) { console.log('Google Calendar save failed:', e); }
+}
 
 async function saveToGoogleTasks(text) {
   if (!gToken) return;
