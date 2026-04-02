@@ -256,9 +256,6 @@ body{display:flex;flex-direction:column;height:100dvh}
       </div>
       <div>
         <div class="slabel">Quick Actions</div>
-        <div class="abtn" onclick="goApple('calshow://')"><div class="aicon">📅</div><div><div class="albl">Apple Calendar</div><div class="asub">View and add events</div></div></div>
-        <div class="abtn" onclick="goApple('x-apple-reminderkit://')"><div class="aicon">✅</div><div><div class="albl">Apple Reminders</div><div class="asub">View all reminders</div></div></div>
-        <div class="abtn" onclick="goApple('applenotes://')"><div class="aicon">📝</div><div><div class="albl">Apple Notes</div><div class="asub">Open Notes app</div></div></div>
         <div class="abtn" onclick="goApple('maps://')"><div class="aicon">🗺</div><div><div class="albl">Apple Maps</div><div class="asub">Navigate anywhere</div></div></div>
         <div class="abtn" onclick="resetSetup()"><div class="aicon">⚙️</div><div><div class="albl">Settings</div><div class="asub">Update keys</div></div></div>
       </div>
@@ -717,8 +714,8 @@ async function process(text) {
     hist.push({role:'assistant',content:reply});
     speak(reply);
     const tl2=text.toLowerCase();
-    if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){tasks.unshift({id:Date.now(),text:m[1].trim(),done:false,time:now.toLocaleString()});saveTasks();renderTasks();setTimeout(()=>goApple('x-apple-reminderkit://'),1400);}}
-    if(/calendar|schedule|add.*event|meeting|appointment/.test(tl2)){setTimeout(()=>goApple('calshow://'),1400);}
+    if(/remind|task|to.?do/.test(tl2)){const m=text.match(/(?:remind(?:er)?|task|to.?do)[:\s]+(?:me\s+)?(?:to\s+)?(.*)/i);if(m&&m[1]){tasks.unshift({id:Date.now(),text:m[1].trim(),done:false,time:now.toLocaleString()});saveTasks();renderTasks();}}
+    
     if(/navigate|direction|take me to|open maps|get me to/.test(tl2)){const m=text.match(/(?:navigate|directions?|take me to|open maps|get me to)\s+(?:to\s+)?(.*)/i);setTimeout(()=>goApple('maps://?q='+encodeURIComponent((m&&m[1])||'nearby')),1000);}
     if(/\b(?:note|idea|remember|save that|jot)\b/.test(tl2)){const m=text.match(/(?:note|idea|remember|save that|jot)[:\s]+(.*)/i);if(m&&m[1]){notes.unshift({id:Date.now(),text:'✦ '+m[1].trim(),time:now.toLocaleString()});saveNotes();renderNotes();}}
     if(/stress|anxious|overwhelm|panic|freak/.test(tl2)) stressMode();
